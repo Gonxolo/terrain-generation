@@ -1,4 +1,4 @@
-let cubeRotation = 7 * Math.PI;
+let cubeRotation = 0.0;
 
 const colors = () => {
     const faceColors = [
@@ -105,6 +105,34 @@ let sampleCube = {
     ],
 }
 
+let sampleMesh = {
+    positions : [
+        // Front face
+        -1.0, -1.0,  1.0,
+        1.0, -1.0,  1.0,
+        1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
+    ],
+    vertexNormals : [
+        // Front
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+        0.0,  0.0,  1.0,
+    ],
+    colors : [
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+    ],
+    indices : [
+        0,  1,  2,      0,  2,  3,    // front
+    ],
+}
+
+const shape = sampleMesh;
+
 main();
 
 function main() {
@@ -127,11 +155,14 @@ function main() {
         uniform mat4 uProjectionMatrix;
         uniform mat4 uViewMatrix;
         uniform mat4 uModelMatrix;
+        // uniform float fractalFunction;
         
         varying lowp vec4 vColor;
         varying highp vec3 vLighting;
         
         void main(void) {
+          // highp vec4 position = vec4(aVertexPosition.x, fractalFunction, aVertexPosition.zw);
+          // gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * position;
           gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
           vColor = aVertexColor;
           
@@ -171,10 +202,11 @@ function main() {
             viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
             modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
             normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
+            // fractalFunction: gl.getUniformLocation(shaderProgram, 'fractalFunction'),
         },
     };
 
-    const buffers = initBuffers(gl, sampleCube.positions, sampleCube.vertexNormals, sampleCube.colors, sampleCube.indices);
+    const buffers = initBuffers(gl, shape.positions, shape.vertexNormals, shape.colors, shape.indices);
 
     let then = 0;
 
@@ -286,22 +318,23 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     const modelMatrix = mat4.create();
 
-    // mat4.translate(modelViewMatrix,
-    //     modelViewMatrix,
-    //     [-0.0, 0.0, -6.0]
+    // mat4.rotate(modelMatrix,
+    //     modelMatrix,
+    //     cubeRotation,
+    //     [0, 0, 1]
     // );
 
     mat4.rotate(modelMatrix,
         modelMatrix,
-        cubeRotation,
-        [0, 0, 1]
-    );
-
-    mat4.rotate(modelMatrix,
-        modelMatrix,
-        cubeRotation * .7,
+        cubeRotation * 0.7,
         [0, 1, 0]
     );
+
+    // mat4.rotate(modelMatrix,
+    //     modelMatrix,
+    //     cubeRotation * 0.3,
+    //     [1, 0, 0]
+    // );
 
     const normalMatrix = mat4.create();
     mat4.invert(normalMatrix, modelMatrix);
@@ -374,7 +407,12 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     // Tell WebGL to use our program when drawing
     gl.useProgram(programInfo.program);
 
-    // Set the shader uniforms
+    // const fractalFunction = 1.0;
+    // // Set the shader uniforms
+    // gl.uniform1f(
+    //     programInfo.uniformLocations.fractalFunction,
+    //     false,
+    //     fractalFunction);
     gl.uniformMatrix4fv(
         programInfo.uniformLocations.projectionMatrix,
         false,
@@ -393,7 +431,8 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
         normalMatrix);
 
     {
-        const vertexCount = 36;
+        // const vertexCount = 36;
+        const vertexCount = 6;
         const type = gl.UNSIGNED_SHORT;
         const offset = 0;
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
@@ -448,4 +487,65 @@ function loadShader(gl, type, source) {
     }
 
     return shader;
+}
+
+function heightMap(xzMin, xzMax, xDivs, zDivs) {
+
+    const pos = [];
+    const cols = [];
+    const norms = [];
+    const ind = [];
+
+    let idx = 0;
+
+    // if (xzMin.type !== 'vec2' || xzMax.type !== 'vec2'){
+    //     throw "heightMap: either xzMin or xzMax is not a vec2";
+    // }
+
+    const dim = vec2.create();
+    vec2.subtract(dim, xzMax, xzMin);
+    const dx = dim[0] / (xDivs);
+    const dz = dim[1] / (zDivs);
+
+    for (let x = xzMin[0]; x < xzMax[0]; x+=dx){
+        for (let z = xzMin[1]; x < xzMax[1]; z+=dz){
+            //Triangle 1
+            //  x,z
+            //   |\
+            //   |  \
+            //   |    \
+            //   |      \
+            //   |        \
+            //   |__________\
+            // x,z+dz      x+dx,z+dz
+            pos.push(vec4.fromValues(   x, 0.0,    z, 1.0));
+            pos.push(vec4.fromValues(   x, 0.0, z+dz, 1.0));
+            pos.push(vec4.fromValues(x+dx, 0.0, z+dz, 1.0));
+            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
+            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
+            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
+            ind.push(idx, idx+1, idx+2);
+
+            //Triangle 2
+            //  x,z         x+dx,z
+            //    \----------|
+            //      \        |
+            //        \      |
+            //          \    |
+            //            \  |
+            //              \|
+            //           x+dx,z+dz
+            pos.push(vec4.fromValues(x+dx, 0.0,    z, 1.0));
+            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
+            ind.push(idx, idx+2, idx+3);
+            idx += 4;
+        }
+    }
+
+    return {
+        positions: pos,
+        colors: cols,
+        vertexNormals: norms,
+        indices: ind,
+    }
 }
