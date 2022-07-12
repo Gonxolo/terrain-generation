@@ -105,145 +105,9 @@ let sampleCube = {
     ],
 }
 
-let sampleMesh = {
-    positions: [
-        -1.0, -1.0,  1.0,
-        1.0, -1.0,  1.0,
-        1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-    ],
-    vertexNormals: [
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-    ],
-    colors: [
-        1.0, 0.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 1.0,
-    ],
-    indices: [
-        0,  1,  2,
-        0,  2,  3,
-    ],
-}
+main();
 
-const heightMap = (xzMin, xzMax, xDivs, zDivs, y) => {
-
-    const pos = [];
-    const cols = [];
-    const norms = [];
-    const ind = [];
-
-    let idx = 0;
-
-    if (xzMin.type !== 'vec2' || xzMax.type !== 'vec2'){
-        throw "heightMap: either xzMin or xzMax is not a vec2";
-    }
-
-    const dim = subtract(xzMax, xzMin);
-    const dx = dim[0] / (xDivs);
-    const dz = dim[1] / (zDivs);
-
-    for (let x = xzMin[0]; x < xzMax[0]; x+=dx){
-        for (let z = xzMin[1]; x < xzMax[1]; z+=dz){
-            //Triangle 1
-            //  x,z
-            //   |\
-            //   |  \
-            //   |    \
-            //   |      \
-            //   |        \
-            //   |__________\
-            // x,z+dz      x+dx,z+dz
-            pos.push(vec4(   x,       y(x, z),    z, 1.0));
-            pos.push(vec4(   x,    y(x, z+dz), z+dz, 1.0));
-            pos.push(vec4(x+dx, y(x+dx, z+dz), z+dz, 1.0));
-            cols.push(vec4(0.5, 0.1, 0.5, 1.0));
-            cols.push(vec4(0.5, 0.1, 0.5, 1.0));
-            cols.push(vec4(0.5, 0.1, 0.5, 1.0));
-            const nAux0 = vec3.create();
-            vec3.cross(
-                nAux0,
-                vec3.subtract(
-                    vec3(x+dx, y(x+dx, z+dz), z+dz),
-                    vec3(x, y(x, z), z)
-                ),
-                vec3.subtract(
-                    vec3(x, y(x, z+dz), z+dz),
-                    vec3(x, y(x, z), z)
-                )
-            );
-            const nAux1 = vec3.create();
-            vec3.cross(
-                nAux1,
-                vec3.subtract(
-                    vec3(x, y(x, z), z),
-                    vec3(x, y(x, z+dz), z+dz)
-                ),
-                vec3.subtract(
-                    vec3(x+dx, y(x+dx, z+dz), z+dz),
-                    vec3(x, y(x, z+dz), z+dz)
-                )
-            );
-            const nAux2 = vec3.create();
-            vec3.cross(
-                nAux2,
-                vec3.subtract(
-                    vec3(x, y(x, z+dz), z+dz),
-                    vec3(x+dx, y(x+dx, z+dz), z+dz)
-                ),
-                vec3.subtract(
-                    vec3(x, y(x, z), z),
-                    vec3(x+dx, y(x+dx, z+dz), z+dz)
-                )
-            );
-            norms.push(nAux0, nAux1, nAux2);
-            ind.push(idx, idx+1, idx+2);
-
-            //Triangle 2
-            //  x,z         x+dx,z
-            //    \----------|
-            //      \        |
-            //        \      |
-            //          \    |
-            //            \  |
-            //              \|
-            //           x+dx,z+dz
-            pos.push(vec4(x+dx,    y(x+dx, z),    z, 1.0));
-            cols.push(vec4(0.5, 0.1, 0.5, 1.0));
-            const nAux3 = vec3.create();
-            vec3.cross(
-                nAux3,
-                vec3.subtract(
-                    vec3(x+dx, y(x+dx, z+dz), z+dz),
-                    vec3(x+dx, y(x+dx, z), z)
-                ),
-                vec3.subtract(
-                    vec3(x, y(x, z), z),
-                    vec3(x+dx, y(x+dx, z), z)
-                )
-            );
-            norms.push(nAux3);
-            ind.push(idx, idx+2, idx+3);
-            idx += 4;
-        }
-    }
-
-    return {
-        positions: pos,
-        colors: cols,
-        vertexNormals: norms,
-        indices: ind,
-    }
-};
-
-
-main(sampleCube);
-
-function main(shape) {
+function main() {
     const canvas = document.querySelector("#glCanvas");
     // Initialize the GL context
     const gl = canvas.getContext("webgl");
@@ -260,14 +124,15 @@ function main(shape) {
         attribute vec3 aVertexNormal;
         
         uniform mat4 uNormalMatrix;
-        uniform mat4 uModelViewMatrix;
         uniform mat4 uProjectionMatrix;
+        uniform mat4 uViewMatrix;
+        uniform mat4 uModelMatrix;
         
         varying lowp vec4 vColor;
         varying highp vec3 vLighting;
         
         void main(void) {
-          gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+          gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
           vColor = aVertexColor;
           
           // Apply lighting effect
@@ -303,12 +168,13 @@ function main(shape) {
         },
         uniformLocations: {
             projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-            modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+            viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+            modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
             normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
         },
     };
 
-    const buffers = initBuffers(gl, shape.positions, shape.vertexNormals, shape.colors, shape.indices);
+    const buffers = initBuffers(gl, sampleCube.positions, sampleCube.vertexNormals, sampleCube.colors, sampleCube.indices);
 
     let then = 0;
 
@@ -396,15 +262,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
 
     // Clear the canvas before we start drawing on it.
-
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // Create a perspective matrix, a special matrix that is
-    // used to simulate the distortion of perspective in a camera.
-    // Our field of view is 45 degrees, with a width/height
-    // ratio that matches the display size of the canvas
-    // and we only want to see objects between 0.1 units
-    // and 100 units away from the camera.
 
     const fieldOfView = 45 * Math.PI / 180;   // in radians
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
@@ -412,46 +270,52 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     const zFar = 100.0;
     const projectionMatrix = mat4.create();
 
-    // note: glmatrix.js always has the first argument
-    // as the destination to receive the result.
     mat4.perspective(projectionMatrix,
         fieldOfView,
         aspect,
         zNear,
         zFar);
 
-    // Set the drawing position to the "identity" point, which is
-    // the center of the scene.
-    const modelViewMatrix = mat4.create();
+    const viewMatrix = mat4.create();
 
-    // Now move the drawing position a bit to where we want to
-    // start drawing the square.
+    let eye = vec3.fromValues(-0.0, 0.0, 6.0);
+    let at = vec3.fromValues(0.0, 0.0, 0.0);
+    let up = vec3.fromValues(0.0, 1.0, 0.0);
 
-    mat4.translate(modelViewMatrix,     // destination matrix
-        modelViewMatrix,     // matrix to translate
-        [-0.0, 0.0, -6.0]);  // amount to translate
+    mat4.lookAt(viewMatrix, eye, at, up);
 
-    mat4.rotate(modelViewMatrix,  // destination matrix
-        modelViewMatrix,  // matrix to rotate
-        cubeRotation,   // amount to rotate in radians
-        [0, 0, 1]);       // axis to rotate around
+    const modelMatrix = mat4.create();
 
-    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
+    // mat4.translate(modelViewMatrix,
+    //     modelViewMatrix,
+    //     [-0.0, 0.0, -6.0]
+    // );
+
+    mat4.rotate(modelMatrix,
+        modelMatrix,
+        cubeRotation,
+        [0, 0, 1]
+    );
+
+    mat4.rotate(modelMatrix,
+        modelMatrix,
+        cubeRotation * .7,
+        [0, 1, 0]
+    );
 
     const normalMatrix = mat4.create();
-    mat4.invert(normalMatrix, modelViewMatrix);
+    mat4.invert(normalMatrix, modelMatrix);
     mat4.transpose(normalMatrix, normalMatrix);
 
 
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
     {
-        const numComponents = 3;  // pull out 2 values per iteration
-        const type = gl.FLOAT;    // the data in the buffer is 32bit floats
-        const normalize = false;  // don't normalize
-        const stride = 0;         // how many bytes to get from one set of values to the next
-                                  // 0 = use type and numComponents above
-        const offset = 0;         // how many bytes inside the buffer to start from
+        const numComponents = 3;
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
         gl.vertexAttribPointer(
             programInfo.attribLocations.vertexPosition,
@@ -504,24 +368,25 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
             programInfo.attribLocations.vertexNormal);
     }
 
-
     // Tell WebGL which indices to use to index the vertices
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
     // Tell WebGL to use our program when drawing
-
     gl.useProgram(programInfo.program);
 
     // Set the shader uniforms
-
     gl.uniformMatrix4fv(
         programInfo.uniformLocations.projectionMatrix,
         false,
         projectionMatrix);
     gl.uniformMatrix4fv(
-        programInfo.uniformLocations.modelViewMatrix,
+        programInfo.uniformLocations.viewMatrix,
         false,
-        modelViewMatrix);
+        viewMatrix);
+    gl.uniformMatrix4fv(
+        programInfo.uniformLocations.modelMatrix,
+        false,
+        modelMatrix);
     gl.uniformMatrix4fv(
         programInfo.uniformLocations.normalMatrix,
         false,
@@ -534,7 +399,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
 
-    cubeRotation += 0;
+    cubeRotation += deltaTime;
 
 }
 
