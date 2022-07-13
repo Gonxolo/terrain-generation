@@ -1,110 +1,5 @@
 let cubeRotation = 0.0;
 
-const colors = () => {
-    const faceColors = [
-        [1.0, 1.0, 1.0, 1.0], // Front face: white
-        [1.0, 0.0, 0.0, 1.0], // Back face: red
-        [0.0, 1.0, 0.0, 1.0], // Top face: green
-        [0.0, 0.0, 1.0, 1.0], // Bottom face: blue
-        [1.0, 1.0, 0.0, 1.0], // Right face: yellow
-        [1.0, 0.0, 1.0, 1.0], // Left face: purple
-    ];
-    let aux_colors = [];
-    for (let j = 0; j < faceColors.length; ++j) {
-        const c = faceColors[j];
-
-        // Repeat each color four times for the four vertices of the face
-        aux_colors = aux_colors.concat(c, c, c, c);
-    }
-    return aux_colors;
-}
-
-let sampleCube = {
-    positions : [
-        // Front face
-        -1.0, -1.0,  1.0,
-        1.0, -1.0,  1.0,
-        1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-
-        // Back face
-        -1.0, -1.0, -1.0,
-        -1.0,  1.0, -1.0,
-        1.0,  1.0, -1.0,
-        1.0, -1.0, -1.0,
-
-        // Top face
-        -1.0,  1.0, -1.0,
-        -1.0,  1.0,  1.0,
-        1.0,  1.0,  1.0,
-        1.0,  1.0, -1.0,
-
-        // Bottom face
-        -1.0, -1.0, -1.0,
-        1.0, -1.0, -1.0,
-        1.0, -1.0,  1.0,
-        -1.0, -1.0,  1.0,
-
-        // Right face
-        1.0, -1.0, -1.0,
-        1.0,  1.0, -1.0,
-        1.0,  1.0,  1.0,
-        1.0, -1.0,  1.0,
-
-        // Left face
-        -1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
-        -1.0,  1.0,  1.0,
-        -1.0,  1.0, -1.0,
-    ],
-    vertexNormals : [
-        // Front
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-
-        // Back
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0,
-
-        // Top
-        0.0,  1.0,  0.0,
-        0.0,  1.0,  0.0,
-        0.0,  1.0,  0.0,
-        0.0,  1.0,  0.0,
-
-        // Bottom
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0,
-
-        // Right
-        1.0,  0.0,  0.0,
-        1.0,  0.0,  0.0,
-        1.0,  0.0,  0.0,
-        1.0,  0.0,  0.0,
-
-        // Left
-        -1.0,  0.0,  0.0,
-        -1.0,  0.0,  0.0,
-        -1.0,  0.0,  0.0,
-        -1.0,  0.0,  0.0
-    ],
-    colors : colors(),
-    indices : [
-        0,  1,  2,      0,  2,  3,    // front
-        4,  5,  6,      4,  6,  7,    // back
-        8,  9,  10,     8,  10, 11,   // top
-        12, 13, 14,     12, 14, 15,   // bottom
-        16, 17, 18,     16, 18, 19,   // right
-        20, 21, 22,     20, 22, 23,   // left
-    ],
-}
-
 function cross(x, y) {
     return [
       x[1] * y[2] - x[2] * y[1],
@@ -132,10 +27,10 @@ function meshMaker(start, end, xStep, zStep) {
             pos.push(x+dx, 0.0, z+dz);
             pos.push(x+dx, 0.0, z);
             cols.push(
-                1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
             );
             norms.push(
                 0.0, 0.0, 1.0,
@@ -156,7 +51,7 @@ function meshMaker(start, end, xStep, zStep) {
     };
 }
 
-let testMesh = meshMaker({x:-1, z:-1}, {x:1, z:1}, 100, 100);
+let testMesh = meshMaker({x:-9999, z:-9999}, {x:10000, z:10000}, 100, 100);
 
 const shape = testMesh;
 
@@ -182,24 +77,21 @@ function main() {
         uniform mat4 uProjectionMatrix;
         uniform mat4 uViewMatrix;
         uniform mat4 uModelMatrix;
-        // uniform float fractalFunction;
         
         varying lowp vec4 vColor;
         varying highp vec3 vLighting;
         
         void main(void) {
-          // highp vec4 position = vec4(aVertexPosition.x, fractalFunction, aVertexPosition.zw);
-          // gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * position;
           gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
           vColor = aVertexColor;
           
           // Apply lighting effect
 
-          highp vec3 ambientLight = vec3(0.5, 0.5, 0.5);
+          highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
           // highp vec3 ambientLight = vec3(0.0, 0.0, 0.0);
           highp vec3 directionalLightColor = vec3(1, 1, 1);
           // highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);
-          highp vec3 directionalVector = normalize(vec3(0.2, 0.8, 0.2));
+          highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
     
           highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
     
@@ -231,12 +123,57 @@ function main() {
             viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
             modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
             normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
-            // fractalFunction: gl.getUniformLocation(shaderProgram, 'fractalFunction'),
         },
     };
 
+    const A = 1000;
+
     for (let p=0; p < shape.positions.length; p+=3){
-        shape.positions[p+1] = Math.sin(shape.positions[p]*1.5)/3 + Math.sin(shape.positions[p+2])/2;
+        shape.positions[p+1] = //60 * shape.positions[p] + 40;
+             A * Math.sin(shape.positions[p]) * Math.sin(shape.positions[p]) +
+            A * Math.sin(shape.positions[p+2]) * Math.sin(shape.positions[p+2]);
+        if (shape.positions[p+1] >= 5000.0) {
+            shape.colors[p*(4/3)] = 1.0;
+            shape.colors[p*(4/3)+1] = 1.0;
+            shape.colors[p*(4/3)+2] = 1.0;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
+        else if (shape.positions[p+1] >= 4000.0){
+            shape.colors[p*(4/3)] = 0.7;
+            shape.colors[p*(4/3)+1] = 0.7;
+            shape.colors[p*(4/3)+2] = 0.7;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
+        else if (shape.positions[p+1] >= 3000.0){
+            shape.colors[p*(4/3)] = 160/255;
+            shape.colors[p*(4/3)+1] = 82/255;
+            shape.colors[p*(4/3)+2] = 45/255;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
+        else if (shape.positions[p+1] >= 2000.0){
+            shape.colors[p*(4/3)] = 1.0;
+            shape.colors[p*(4/3)+1] = 1.0;
+            shape.colors[p*(4/3)+2] = 0.0;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
+        else if (shape.positions[p+1] >= 1000.0){
+            shape.colors[p*(4/3)] = 173/255;
+            shape.colors[p*(4/3)+1] = 1.0;
+            shape.colors[p*(4/3)+2] = 47/255;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
+        else if (shape.positions[p+1] >= 0.0){
+            shape.colors[p*(4/3)] = 0.0;
+            shape.colors[p*(4/3)+1] = 100/255;
+            shape.colors[p*(4/3)+2] = 0.0;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
+        else {
+            shape.colors[p*(4/3)] = 1.0;
+            shape.colors[p*(4/3)+1] = 0.0;
+            shape.colors[p*(4/3)+2] = 1.0;
+            shape.colors[p*(4/3)+3] = 1.0;
+        }
     }
     for (let i=0; i < shape.positions.length; i+=4){
         // v0
@@ -383,10 +320,10 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     // Clear the canvas before we start drawing on it.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const fieldOfView = 45 * Math.PI / 180;   // in radians
+    const fieldOfView = 90 * Math.PI / 180;   // in radians
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const zNear = 0.1;
-    const zFar = 100.0;
+    const zFar = 50000.0;
     const projectionMatrix = mat4.create();
 
     mat4.perspective(projectionMatrix,
@@ -397,7 +334,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     const viewMatrix = mat4.create();
 
-    let eye = vec3.fromValues(-0.0, 3.0, 3.0);
+    let eye = vec3.fromValues(10000.00001, 20000.0, 10000.00001);
     let at = vec3.fromValues(0.0, 0.0, 0.0);
     let up = vec3.fromValues(0.0, 1.0, 0.0);
 
@@ -405,11 +342,10 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     const modelMatrix = mat4.create();
 
-    // mat4.rotate(modelMatrix,
-    //     modelMatrix,
-    //     cubeRotation,
-    //     [0, 0, 1]
-    // );
+    mat4.translate(modelMatrix,
+        modelMatrix,
+        [0, -10, 10]
+    );
 
     mat4.rotate(modelMatrix,
         modelMatrix,
@@ -494,12 +430,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     // Tell WebGL to use our program when drawing
     gl.useProgram(programInfo.program);
 
-    // const fractalFunction = 1.0;
-    // // Set the shader uniforms
-    // gl.uniform1f(
-    //     programInfo.uniformLocations.fractalFunction,
-    //     false,
-    //     fractalFunction);
+    // Set the shader uniforms
     gl.uniformMatrix4fv(
         programInfo.uniformLocations.projectionMatrix,
         false,
@@ -576,63 +507,4 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-function heightMap(xzMin, xzMax, xDivs, zDivs) {
 
-    const pos = [];
-    const cols = [];
-    const norms = [];
-    const ind = [];
-
-    let idx = 0;
-
-    // if (xzMin.type !== 'vec2' || xzMax.type !== 'vec2'){
-    //     throw "heightMap: either xzMin or xzMax is not a vec2";
-    // }
-
-    const dim = vec2.create();
-    vec2.subtract(dim, xzMax, xzMin);
-    const dx = dim[0] / (xDivs);
-    const dz = dim[1] / (zDivs);
-
-    for (let x = xzMin[0]; x < xzMax[0]; x+=dx){
-        for (let z = xzMin[1]; x < xzMax[1]; z+=dz){
-            //Triangle 1
-            //  x,z
-            //   |\
-            //   |  \
-            //   |    \
-            //   |      \
-            //   |        \
-            //   |__________\
-            // x,z+dz      x+dx,z+dz
-            pos.push(vec4.fromValues(   x, 0.0,    z, 1.0));
-            pos.push(vec4.fromValues(   x, 0.0, z+dz, 1.0));
-            pos.push(vec4.fromValues(x+dx, 0.0, z+dz, 1.0));
-            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
-            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
-            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
-            ind.push(idx, idx+1, idx+2);
-
-            //Triangle 2
-            //  x,z         x+dx,z
-            //    \----------|
-            //      \        |
-            //        \      |
-            //          \    |
-            //            \  |
-            //              \|
-            //           x+dx,z+dz
-            pos.push(vec4.fromValues(x+dx, 0.0,    z, 1.0));
-            cols.push(vec4.fromValues(0.5, 0.1, 0.5, 1.0));
-            ind.push(idx, idx+2, idx+3);
-            idx += 4;
-        }
-    }
-
-    return {
-        positions: pos,
-        colors: cols,
-        vertexNormals: norms,
-        indices: ind,
-    }
-}
