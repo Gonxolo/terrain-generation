@@ -105,6 +105,14 @@ let sampleCube = {
     ],
 }
 
+function cross(x, y) {
+    return [
+      x[1] * y[2] - x[2] * y[1],
+      x[2] * y[0] - x[0] * y[2],
+      x[0] * y[1] - x[1] * y[0],
+    ];
+}
+
 function meshMaker(start, end, xStep, zStep) {
 
     const pos = [];
@@ -124,10 +132,10 @@ function meshMaker(start, end, xStep, zStep) {
             pos.push(x+dx, 0.0, z+dz);
             pos.push(x+dx, 0.0, z);
             cols.push(
-                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
-                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
-                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
-                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
+                1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0,
             );
             norms.push(
                 0.0, 0.0, 1.0,
@@ -187,9 +195,11 @@ function main() {
           
           // Apply lighting effect
 
-          highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+          highp vec3 ambientLight = vec3(0.5, 0.5, 0.5);
+          // highp vec3 ambientLight = vec3(0.0, 0.0, 0.0);
           highp vec3 directionalLightColor = vec3(1, 1, 1);
-          highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+          // highp vec3 directionalLightColor = vec3(1.0, 0.0, 0.0);
+          highp vec3 directionalVector = normalize(vec3(0.2, 0.8, 0.2));
     
           highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
     
@@ -224,6 +234,64 @@ function main() {
             // fractalFunction: gl.getUniformLocation(shaderProgram, 'fractalFunction'),
         },
     };
+
+    for (let p=0; p < shape.positions.length; p+=3){
+        shape.positions[p+1] = Math.sin(shape.positions[p]*1.5)/3 + Math.sin(shape.positions[p+2])/2;
+    }
+    for (let i=0; i < shape.positions.length; i+=4){
+        // v0
+        let v0 = cross(
+            [shape.positions[(i+1)*3] - shape.positions[i*3],
+                shape.positions[(i+1)*3+1] - shape.positions[i*3+1],
+                shape.positions[(i+1)*3+2] - shape.positions[i*3+2]],
+            [shape.positions[(i+2)*3] - shape.positions[i*3],
+                shape.positions[(i+2)*3+1] - shape.positions[i*3+1],
+                shape.positions[(i+2)*3+2] - shape.positions[i*3+2]]
+        );
+        shape.vertexNormals[i*3] = v0[0];
+        shape.vertexNormals[i*3+1] = v0[1];
+        shape.vertexNormals[i*3+2] = v0[2];
+
+        // v1
+        let v1 = cross(
+            [shape.positions[(i+2)*3] - shape.positions[(i+1)*3],
+                shape.positions[(i+2)*3+1] - shape.positions[(i+1)*3+1],
+                shape.positions[(i+2)*3+2] - shape.positions[(i+1)*3+2]],
+            [shape.positions[i*3] - shape.positions[(i+1)*3],
+                shape.positions[i*3+1] - shape.positions[(i+1)*3+1],
+                shape.positions[i*3+2] - shape.positions[(i+1)*3+2]]
+
+        );
+        shape.vertexNormals[(i+1)*3] = v1[0];
+        shape.vertexNormals[(i+1)*3+1] = v1[1];
+        shape.vertexNormals[(i+1)*3+2] = v1[2];
+
+        // v2
+        let v2 = cross(
+            [shape.positions[i*3] - shape.positions[(i+2)*3],
+                shape.positions[i*3+1] - shape.positions[(i+2)*3+1],
+                shape.positions[i*3+2] - shape.positions[(i+2)*3+2]],
+            [shape.positions[(i+1)*3] - shape.positions[(i+2)*3],
+                shape.positions[(i+1)*3+1] - shape.positions[(i+2)*3+1],
+                shape.positions[(i+1)*3+2] - shape.positions[(i+2)*3+2]]
+        );
+        shape.vertexNormals[(i+2)*3] = v2[0];
+        shape.vertexNormals[(i+2)*3+1] = v2[1];
+        shape.vertexNormals[(i+2)*3+2] = v2[2];
+
+        // v3
+        let v3 = cross(
+            [shape.positions[i*3] - shape.positions[(i+3)*3],
+                shape.positions[i*3+1] - shape.positions[(i+3)*3+1],
+                shape.positions[i*3+2] - shape.positions[(i+3)*3+2]],
+            [shape.positions[(i+2)*3] - shape.positions[(i+3)*3],
+                shape.positions[(i+2)*3+1] - shape.positions[(i+3)*3+1],
+                shape.positions[(i+2)*3+2] - shape.positions[(i+3)*3+2]]
+        );
+        shape.vertexNormals[(i+3)*3] = v3[0];
+        shape.vertexNormals[(i+3)*3+1] = v3[1];
+        shape.vertexNormals[(i+3)*3+2] = v3[2];
+    }
 
     const buffers = initBuffers(gl, shape.positions, shape.vertexNormals, shape.colors, shape.indices);
 
@@ -329,7 +397,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     const viewMatrix = mat4.create();
 
-    let eye = vec3.fromValues(-0.0, 6.0, 6.0);
+    let eye = vec3.fromValues(-0.0, 3.0, 3.0);
     let at = vec3.fromValues(0.0, 0.0, 0.0);
     let up = vec3.fromValues(0.0, 1.0, 0.0);
 
