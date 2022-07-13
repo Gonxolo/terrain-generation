@@ -105,33 +105,52 @@ let sampleCube = {
     ],
 }
 
-let sampleMesh = {
-    positions : [
-        // Front face
-        -1.0, -1.0,  1.0,
-        1.0, -1.0,  1.0,
-        1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-    ],
-    vertexNormals : [
-        // Front
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-    ],
-    colors : [
-        1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-    ],
-    indices : [
-        0,  1,  2,      0,  2,  3,    // front
-    ],
+function meshMaker(start, end, xStep, zStep) {
+
+    const pos = [];
+    const cols = [];
+    const norms = [];
+    const inds = [];
+
+    let idx = 0;
+
+    const dx = (end.x - start.x) / xStep;
+    const dz = (end.z - start.z) / zStep;
+
+    for (let x=start.x; x < end.x; x+=dx){
+        for (let z=start.z; z < end.z; z+=dz){
+            pos.push(x, 0.0, z);
+            pos.push(x, 0.0, z+dz);
+            pos.push(x+dx, 0.0, z+dz);
+            pos.push(x+dx, 0.0, z);
+            cols.push(
+                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
+                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
+                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
+                (x+z)/2, (x+z)/2, (x+z)/2, (x+z)/2,
+            );
+            norms.push(
+                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0,
+            );
+            inds.push(idx, idx+1, idx+2, idx, idx+2, idx+3);
+            idx += 4;
+        }
+    }
+
+    return {
+        positions: pos,
+        vertexNormals: norms,
+        colors: cols,
+        indices: inds,
+    };
 }
 
-const shape = sampleMesh;
+let testMesh = meshMaker({x:-1, z:-1}, {x:1, z:1}, 100, 100);
+
+const shape = testMesh;
 
 main();
 
@@ -310,7 +329,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     const viewMatrix = mat4.create();
 
-    let eye = vec3.fromValues(-0.0, 0.0, 6.0);
+    let eye = vec3.fromValues(-0.0, 6.0, 6.0);
     let at = vec3.fromValues(0.0, 0.0, 0.0);
     let up = vec3.fromValues(0.0, 1.0, 0.0);
 
@@ -432,7 +451,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     {
         // const vertexCount = 36;
-        const vertexCount = 6;
+        const vertexCount = shape.indices.length;
         const type = gl.UNSIGNED_SHORT;
         const offset = 0;
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
